@@ -172,18 +172,17 @@ class ACEppProcessor(BaseInvocation):
     
     max_seq_len: int = InputField(default=4096, gt=2048, le=5120, description="The height of the crop rectangle")
     
-    d = 16  # Flux pixels per patch rate
-    max_aspect_ratio = 4
-    
     def image_check(self, image_pil: Image.Image) -> torch.Tensor:
+        max_aspect_ratio = 4
+        
         image = torch.Tensor(np.array(image_pil))
         # preprocess
         H, W = image.shape[1: 3]
         image = image.permute(0, 3, 1, 2)
-        if H / W > self.max_aspect_ratio:
-            image[0] = T.CenterCrop([int(self.max_aspect_ratio * W), W])(image[0])
-        elif W / H > self.max_aspect_ratio:
-            image[0] = T.CenterCrop([H, int(self.max_aspect_ratio * H)])(image[0])
+        if H / W > max_aspect_ratio:
+            image[0] = T.CenterCrop([int(max_aspect_ratio * W), W])(image[0])
+        elif W / H > max_aspect_ratio:
+            image[0] = T.CenterCrop([H, int(max_aspect_ratio * H)])(image[0])
         return image[0]
     
     def transform_pil_tensor(self, pil_image: Image.Image) -> torch.Tensor:
@@ -194,6 +193,8 @@ class ACEppProcessor(BaseInvocation):
         return tensor_image
     
     def invoke(self, context: InvocationContext) -> ACEppProcessorOutput:
+        d = 16  # Flux pixels per patch rate
+        
         image_pil = context.images.get_pil(self.reference_image.image_name, "RGB")
         image = self.image_check(image_pil) - 0.5
         
@@ -229,10 +230,10 @@ class ACEppProcessor(BaseInvocation):
         slice_w = reference_image.shape[-1]
     
         H, W = edit_image.shape[-2:]
-        scale = min(1.0, math.sqrt(self.max_seq_len * 2 / ((H / self.d) * (W / self.d))))
-        rH = int(H * scale) // self.d * self.d
-        rW = int(W * scale) // self.d * self.d
-        slice_w = int(slice_w * scale) // self.d * self.d
+        scale = min(1.0, math.sqrt(self.max_seq_len * 2 / ((H / d) * (W / d))))
+        rH = int(H * scale) // d * d
+        rW = int(W * scale) // d * d
+        slice_w = int(slice_w * scale) // d * d
 
         edit_image = T.Resize((rH, rW), interpolation=T.InterpolationMode.NEAREST_EXACT, antialias=True)(edit_image)
         edit_mask = T.Resize((rH, rW), interpolation=T.InterpolationMode.NEAREST_EXACT, antialias=True)(edit_mask)
