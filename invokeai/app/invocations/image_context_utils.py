@@ -247,6 +247,7 @@ class ACEppProcessor(BaseInvocation):
         # and took from original author's implementation
         # TODO: remove this -0.5/+0.5
         edit_image += 0.5
+        image = cv2_to_pil(edit_image[0].numpy())
 
         image_dto = context.images.save(image=edit_image)
         mask_name = context.tensors.save(edit_mask)
