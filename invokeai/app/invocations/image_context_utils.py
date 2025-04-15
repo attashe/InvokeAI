@@ -156,6 +156,9 @@ class ACEppProcessorOutput(BaseInvocationOutput):
     )
     mask: TensorField = OutputField(description="Inpaint mask")
     crop_pad: int = OutputField(description="Padding to crop result")
+    crop_width: int = OutputField(description="Width of output area")
+    crop_height: int = OutputField(description="Heihgt of crop area")
+
 
 @invocation(
     "ace_plus_plus_processor",
@@ -211,6 +214,8 @@ class ACEppProcessor(BaseInvocation):
                 edit_mask = torch.ones((eH, eW))
             else:
                 edit_mask = context.tensors.load(self.edit_mask.tensor_name)
+        
+        out_H, out_W = edit_image.shape[-2:]
             
         _, H, W = image.shape
         _, eH, eW = edit_image.shape
@@ -252,6 +257,8 @@ class ACEppProcessor(BaseInvocation):
             image=ImageField(image_name=image_dto.image_name),
             mask=TensorField(tensor_name=mask_name),
             crop_pad=slice_w,
+            crop_height=int(out_H * scale),
+            crop_width=int(out_W * scale),
         )
 
 
