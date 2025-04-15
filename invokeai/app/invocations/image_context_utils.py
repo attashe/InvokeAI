@@ -176,8 +176,9 @@ class ACEppProcessor(BaseInvocation):
         max_aspect_ratio = 4
         
         image = torch.Tensor(np.array(image_pil))
+        image = image.unsqueeze(0)
         # preprocess
-        H, W = image.shape[1: 3]
+        H, W = image.shape[1:3]
         image = image.permute(0, 3, 1, 2)
         if H / W > max_aspect_ratio:
             image[0] = T.CenterCrop([int(max_aspect_ratio * W), W])(image[0])
