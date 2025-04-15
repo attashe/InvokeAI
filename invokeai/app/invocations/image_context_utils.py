@@ -199,9 +199,6 @@ class ACEppProcessor(BaseInvocation):
         image_pil = context.images.get_pil(self.reference_image.image_name, "RGB")
         image = self.image_check(image_pil) - 0.5
         
-        # TODO: different tasks
-        repainting_scale = 1.0
-        
         if self.edit_image is None:
             edit_image = torch.zeros((3, self.height, self.width))
             edit_mask = torch.ones((1, self.height, self.width))
@@ -211,10 +208,9 @@ class ACEppProcessor(BaseInvocation):
             edit_image = self.image_check(edit_image) - 0.5
             if self.edit_mask is None:
                 _, eH, eW = edit_image.shape
-                edit_mask = np.ones((eH, eW))
+                edit_mask = torch.ones((eH, eW))
             else:
                 edit_mask = context.tensors.load(self.edit_mask.tensor_name)
-            raise Exception("Not implemented")
             
         _, H, W = image.shape
         _, eH, eW = edit_image.shape
@@ -226,7 +222,7 @@ class ACEppProcessor(BaseInvocation):
         reference_image = T.Resize((tH, tW), interpolation=T.InterpolationMode.BILINEAR, antialias=True)(
                 image)
         edit_image = torch.cat([reference_image, edit_image], dim=-1)
-        edit_mask = torch.cat([torch.zeros([1, reference_image.shape[1], reference_image.shape[2]]), edit_mask],
+        edit_mask = torch.cat([torch.zeros((1, reference_image.shape[1], reference_image.shape[2])), edit_mask],
                                 dim=-1)
         slice_w = reference_image.shape[-1]
     
