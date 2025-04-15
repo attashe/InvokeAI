@@ -31,6 +31,7 @@ import torchvision.transforms as T
 from invokeai.app.invocations.baseinvocation import BaseInvocation, BaseInvocationOutput, invocation, invocation_output
 from invokeai.app.invocations.fields import (
     Field,
+    Input,
     ImageField,
     InputField,
     OutputField,
@@ -164,8 +165,8 @@ class ACEppProcessorOutput(BaseInvocationOutput):
 )
 class ACEppProcessor(BaseInvocation):
     reference_image: ImageField = InputField(description="Reference Image")
-    edit_image: Optional[ImageField] = InputField(description="Edit Image")
-    edit_mask: Optional[TensorField] = InputField(description="Edit Mask")
+    edit_image: Optional[ImageField] = InputField(description="Edit Image", default=None, input=Input.Connection)
+    edit_mask: Optional[TensorField] = InputField(description="Edit Mask", default=None, input=Input.Connection)
     
     width: int = InputField(default=512, gt=0, description="The width of the crop rectangle")
     height: int = InputField(default=512, gt=0, description="The height of the crop rectangle")
