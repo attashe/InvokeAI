@@ -246,7 +246,7 @@ class ACEppProcessor(BaseInvocation):
         # and took from original author's implementation
         # TODO: remove this -0.5/+0.5
         edit_image += 0.5
-        image = (edit_image[0].numpy()).astype()
+        image = Image.fromarray((edit_image[0].numpy() * 255).astype(np.uint8))
 
         image_dto = context.images.save(image=edit_image)
         mask_name = context.tensors.save(edit_mask)
