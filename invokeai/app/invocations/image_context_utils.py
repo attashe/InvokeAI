@@ -246,8 +246,10 @@ class ACEppProcessor(BaseInvocation):
         # and took from original author's implementation
         # TODO: remove this -0.5/+0.5
         edit_image += 0.5
+        # Convert to torch.bool
+        edit_mask = edit_mask > 0.5
         image_out = Image.fromarray((edit_image[0].numpy() * 255).astype(np.uint8))
-
+        
         image_dto = context.images.save(image=image_out)
         mask_name = context.tensors.save(edit_mask)
         return ACEppProcessorOutput(
