@@ -105,7 +105,7 @@ class InpaintCropOutput(BaseInvocationOutput):
     image_crop: ImageField = OutputField(
         description="Cropped part of image", title="Conditioning"
     )
-    stitcher: List[int] = Field()
+    stitcher: List[int] = OutputField(description="Parameter for stitching image after inpainting")
 
 
 @invocation(
