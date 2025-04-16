@@ -129,6 +129,8 @@ class Flux(nn.Module):
             img_ids = [ids] + [ref_ids for ref_ids in uno_ref_ids]
             img = torch.cat(img_in, dim=1)  
             ids = torch.cat(img_ids, dim=1)
+
+            print(f'FINAL SHAPES: {img.shape=}, {ids.shape=}')
         # UNO Block end
         pe = self.pe_embedder(ids)
 
