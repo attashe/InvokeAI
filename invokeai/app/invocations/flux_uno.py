@@ -16,7 +16,7 @@ from invokeai.app.invocations.fields import (
 from invokeai.app.invocations.primitives import ImageField
 from invokeai.app.services.shared.invocation_context import InvocationContext
 
-@invocation_output("flux_redux_output")
+@invocation_output("flux_uno_output")
 class FluxUnoOutput(BaseInvocationOutput):
     """The conditioning output of a FLUX Redux invocation."""
 
@@ -24,9 +24,10 @@ class FluxUnoOutput(BaseInvocationOutput):
         description="Reference images container", title="Reference images"
     )
 
+# TODO(attashe): adjust tags and category
 @invocation(
-    "flux_redux",
-    title="FLUX Redux",
+    "flux_uno",
+    title="FLUX UNO",
     tags=["ip_adapter", "control"],
     category="ip_adapter",
     version="2.1.0",
