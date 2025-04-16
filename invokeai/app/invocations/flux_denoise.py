@@ -291,7 +291,7 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
 
         img_ids = generate_img_ids(h=latent_h, w=latent_w, batch_size=b, device=x.device, dtype=x.dtype)
 
-        is_flux_uno = self.uno_reference is None
+        is_flux_uno = self.uno_reference is not None
         print(f"FLUX UNO STATE {is_flux_uno}")
         if is_flux_uno:
             uno_ref_imgs = self._prep_uno_reference_imgs(context)
