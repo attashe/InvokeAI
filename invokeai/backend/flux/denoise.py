@@ -1,5 +1,5 @@
 import math
-from typing import Callable
+from typing import Callable, List
 
 import torch
 from tqdm import tqdm
@@ -32,6 +32,8 @@ def denoise(
     neg_ip_adapter_extensions: list[XLabsIPAdapterExtension],
     # extra img tokens
     img_cond: torch.Tensor | None,
+    uno_ref_imgs: List[torch.Tensor] | None = None,
+    uno_ref_ids: List[torch.Tensor] | None = None,
 ):
     # step 0 is the initial state
     total_steps = len(timesteps) - 1
@@ -72,6 +74,13 @@ def denoise(
         # tensors. Calculating the sum materializes each tensor into its own instance.
         merged_controlnet_residuals = sum_controlnet_flux_outputs(controlnet_residuals)
         pred_img = torch.cat((img, img_cond), dim=-1) if img_cond is not None else img
+        # UNO reference block
+        img_end = pred_img.shape[1]
+        if uno_ref_imgs is not None and uno_ref_ids is not None:
+            print(f'IMG SHAPES: {pred_img.shape=}, {uno_ref_imgs[0].shape=}')
+            print(f'IDS SHAPES: {img_ids.shape=}, {uno_ref_ids[0]=}')
+            pred_img = torch.cat([pred_img, *uno_ref_imgs], dim=1)
+            img_ids = torch.cat([img_ids, *uno_ref_ids], dim=1)
         pred = model(
             img=pred_img,
             img_ids=img_ids,
@@ -87,6 +96,7 @@ def denoise(
             ip_adapter_extensions=pos_ip_adapter_extensions,
             regional_prompting_extension=pos_regional_prompting_extension,
         )
+        pred = pred[:, :img_end, ...]
 
         step_cfg_scale = cfg_scale[step_index]
 
@@ -113,6 +123,7 @@ def denoise(
                 ip_adapter_extensions=neg_ip_adapter_extensions,
                 regional_prompting_extension=neg_regional_prompting_extension,
             )
+            neg_pred = neg_pred[:, :img_end, ...]
             pred = neg_pred + step_cfg_scale * (pred - neg_pred)
 
         preview_img = img - t_curr * pred
