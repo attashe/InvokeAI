@@ -78,7 +78,7 @@ def denoise(
         img_end = pred_img.shape[1]
         if uno_ref_imgs is not None and uno_ref_ids is not None:
             print(f'IMG SHAPES: {pred_img.shape=}, {uno_ref_imgs[0].shape=}')
-            print(f'IDS SHAPES: {img_ids.shape=}, {uno_ref_ids[0]=}')
+            print(f'IDS SHAPES: {img_ids.shape=}, {uno_ref_ids[0].shape=}')
             pred_img = torch.cat([pred_img, *uno_ref_imgs], dim=1)
             img_ids = torch.cat([img_ids, *uno_ref_ids], dim=1)
         pred = model(
@@ -97,6 +97,7 @@ def denoise(
             regional_prompting_extension=pos_regional_prompting_extension,
         )
         pred = pred[:, :img_end, ...]
+        img_ids = img_ids[:, :img_end, ...]
 
         step_cfg_scale = cfg_scale[step_index]
 
