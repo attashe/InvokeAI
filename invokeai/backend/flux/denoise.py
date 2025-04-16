@@ -5,12 +5,12 @@ import torch
 from tqdm import tqdm
 
 from invokeai.backend.flux.controlnet.controlnet_flux_output import ControlNetFluxOutput, sum_controlnet_flux_outputs
+from invokeai.backend.flux.extensions.inpaint_extension import InpaintExtension
 from invokeai.backend.flux.extensions.instantx_controlnet_extension import InstantXControlNetExtension
 from invokeai.backend.flux.extensions.regional_prompting_extension import RegionalPromptingExtension
 from invokeai.backend.flux.extensions.xlabs_controlnet_extension import XLabsControlNetExtension
 from invokeai.backend.flux.extensions.xlabs_ip_adapter_extension import XLabsIPAdapterExtension
 from invokeai.backend.flux.model import Flux
-from invokeai.backend.rectified_flow.rectified_flow_inpaint_extension import RectifiedFlowInpaintExtension
 from invokeai.backend.stable_diffusion.diffusers_pipeline import PipelineIntermediateState
 
 
@@ -26,7 +26,7 @@ def denoise(
     step_callback: Callable[[PipelineIntermediateState], None],
     guidance: float,
     cfg_scale: list[float],
-    inpaint_extension: RectifiedFlowInpaintExtension | None,
+    inpaint_extension: InpaintExtension | None,
     controlnet_extensions: list[XLabsControlNetExtension | InstantXControlNetExtension],
     pos_ip_adapter_extensions: list[XLabsIPAdapterExtension],
     neg_ip_adapter_extensions: list[XLabsIPAdapterExtension],
@@ -74,13 +74,13 @@ def denoise(
         # tensors. Calculating the sum materializes each tensor into its own instance.
         merged_controlnet_residuals = sum_controlnet_flux_outputs(controlnet_residuals)
         pred_img = torch.cat((img, img_cond), dim=-1) if img_cond is not None else img
-        # UNO reference block
-        img_end = pred_img.shape[1]
-        if uno_ref_imgs is not None and uno_ref_ids is not None:
-            print(f'IMG SHAPES: {pred_img.shape=}, {uno_ref_imgs[0].shape=}')
-            print(f'IDS SHAPES: {img_ids.shape=}, {uno_ref_ids[0].shape=}')
-            pred_img = torch.cat([pred_img, *uno_ref_imgs], dim=1)
-            img_ids = torch.cat([img_ids, *uno_ref_ids], dim=1)
+        # # UNO reference block
+        # img_end = pred_img.shape[1]
+        # if uno_ref_imgs is not None and uno_ref_ids is not None:
+        #     print(f'IMG SHAPES: {pred_img.shape=}, {uno_ref_imgs[0].shape=}')
+        #     print(f'IDS SHAPES: {img_ids.shape=}, {uno_ref_ids[0].shape=}')
+        #     pred_img = torch.cat([pred_img, *uno_ref_imgs], dim=1)
+        #     img_ids = torch.cat([img_ids, *uno_ref_ids], dim=1)
         pred = model(
             img=pred_img,
             img_ids=img_ids,
@@ -95,9 +95,11 @@ def denoise(
             controlnet_single_block_residuals=merged_controlnet_residuals.single_block_residuals,
             ip_adapter_extensions=pos_ip_adapter_extensions,
             regional_prompting_extension=pos_regional_prompting_extension,
+            uno_ref_imgs=uno_ref_imgs,
+            uno_ref_ids=uno_ref_ids,
         )
-        pred = pred[:, :img_end, ...]
-        img_ids = img_ids[:, :img_end, ...]
+        # pred = pred[:, :img_end, ...]
+        # img_ids = img_ids[:, :img_end, ...]
 
         step_cfg_scale = cfg_scale[step_index]
 
