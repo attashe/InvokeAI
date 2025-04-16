@@ -126,7 +126,6 @@ def denoise(
                 ip_adapter_extensions=neg_ip_adapter_extensions,
                 regional_prompting_extension=neg_regional_prompting_extension,
             )
-            neg_pred = neg_pred[:, :img_end, ...]
             pred = neg_pred + step_cfg_scale * (pred - neg_pred)
 
         preview_img = img - t_curr * pred

@@ -698,8 +698,39 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         return img_cond
     
     def _prep_uno_reference_imgs(self, context: InvocationContext) -> list[torch.Tensor]:
+        import torchvision.transforms.functional as TVF
+        
+        def preprocess_ref(raw_image: Image.Image, long_size: int = 512):
+            # 获取原始图像的宽度和高度
+            image_w, image_h = raw_image.size
+
+            # 计算长边和短边
+            if image_w >= image_h:
+                new_w = long_size
+                new_h = int((long_size / image_w) * image_h)
+            else:
+                new_h = long_size
+                new_w = int((long_size / image_h) * image_w)
+
+            # 按新的宽高进行等比例缩放
+            raw_image = raw_image.resize((new_w, new_h), resample=Image.LANCZOS)
+            target_w = new_w // 16 * 16
+            target_h = new_h // 16 * 16
+
+            # 计算裁剪的起始坐标以实现中心裁剪
+            left = (new_w - target_w) // 2
+            top = (new_h - target_h) // 2
+            right = left + target_w
+            bottom = top + target_h
+
+            # 进行中心裁剪
+            raw_image = raw_image.crop((left, top, right, bottom))
+
+            # 转换为 RGB 模式
+            raw_image = raw_image.convert("RGB")
+            return raw_image
         # Load the conditioning image and resize it to the target image size.
-        assert self.controlnet_vae is not None
+        assert self.controlnet_vae is not None, 'Controlnet Vae must be set for UNO encoding'
         vae_info = context.models.load(self.controlnet_vae.vae)
         
         assert self.uno_reference is not None, "Needs reference images for UNO"
@@ -709,7 +740,13 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         
         for img_name in ref_img_names:
             image_pil = context.images.get_pil(img_name)
-            ref_latent = self._encode_image_vae(vae_info, image_pil)
+            image_pil = preprocess_ref(image_pil)
+            
+            image_tensor = TVF.to_tensor(image_pil) * 2.0 - 1.0
+            print(f"IMAGE TENSOR {image_tensor.shape=} {image_tensor}")
+            ref_latent = FluxVaeEncodeInvocation.vae_encode(vae_info=vae_info, image_tensor=image_tensor)
+            print(f"REF LATENT {image_tensor.shape=}")
+            # ref_latent = self._encode_image_vae(vae_info, image_pil)
             ref_latents.append(ref_latent)
         
         return ref_latents
