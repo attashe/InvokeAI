@@ -739,11 +739,13 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         ref_img_names: list[str] = self.uno_reference.image_names
         ref_latents: list[torch.Tensor] = []
         
+        ref_long_side = 512 if len(ref_img_names) <= 1 else 320
+        
         for img_name in ref_img_names:
             image_pil = context.images.get_pil(img_name)
             image_pil = image_pil.convert("RGB")  # To correct resizing
             print(f'IMAGE ARRAY 1: {np.array(image_pil)}')
-            image_pil = preprocess_ref(image_pil)
+            image_pil = preprocess_ref(image_pil, ref_long_side)
             print(f'IMAGE ARRAY 2: {np.array(image_pil)}')
             
             print(f'IMAGE TENSOR 0: {TVF.to_tensor(image_pil)}')
