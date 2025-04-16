@@ -741,7 +741,7 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         for img_name in ref_img_names:
             image_pil = context.images.get_pil(img_name)
             print(f'IMAGE ARRAY 1: {np.array(image_pil)}')
-            image_pil = preprocess_ref(image_pil)
+            image_pil = preprocess_ref(image_pil.convert("RGB"))
             print(f'IMAGE ARRAY 2: {np.array(image_pil)}')
             
             print(f'IMAGE TENSOR 0: {TVF.to_tensor(image_pil)}')
