@@ -123,13 +123,13 @@ class Flux(nn.Module):
         img_end = img.shape[1]
         if uno_ref_imgs is not None and uno_ref_ids is not None:
             print(f'IMG SHAPES: {img.shape=}, {uno_ref_imgs[0].shape=}')
-            img_in = [img] + [self.img_in(ref) for ref in uno_ref_imgs]
             print(f'IDS SHAPES: {ids.shape=}, {img_ids.shape=}, {uno_ref_ids[0].shape=}')
             print(f'IDS SHAPES: {img_ids=}, {uno_ref_ids[0]=}')
+            img_in = [img] + [self.img_in(ref) for ref in uno_ref_imgs]
             img_ids = [ids] + [ref_ids for ref_ids in uno_ref_ids]
             img = torch.cat(img_in, dim=1)  
             ids = torch.cat(img_ids, dim=1)
-
+            
             print(f'FINAL SHAPES: {img.shape=}, {ids.shape=}')
         # UNO Block end
         pe = self.pe_embedder(ids)
