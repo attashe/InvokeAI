@@ -742,7 +742,7 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
             image_pil = context.images.get_pil(img_name)
             image_pil = preprocess_ref(image_pil)
             
-            image_tensor = TVF.to_tensor(image_pil) * 2.0 - 1.0
+            image_tensor = (TVF.to_tensor(image_pil) * 2.0 - 1.0).unsqueeze(0)
             print(f"IMAGE TENSOR {image_tensor.shape=} {image_tensor}")
             ref_latent = FluxVaeEncodeInvocation.vae_encode(vae_info=vae_info, image_tensor=image_tensor)
             print(f"REF LATENT {image_tensor.shape=}")
