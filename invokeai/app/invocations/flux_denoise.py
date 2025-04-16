@@ -305,8 +305,6 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
             print(f"UNO REF IDS SHAPE 2 {uno_ref_ids[0].shape=}")
             # for i in range(len(uno_ref_imgs)):
             #     uno_ref_imgs[i] = pack(uno_ref_imgs[i])
-            
-            uno_ref_ids = None
         else:
             uno_ref_imgs = None
             uno_ref_ids = None
@@ -316,8 +314,6 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         inpaint_mask = pack(inpaint_mask) if inpaint_mask is not None else None
         noise = pack(noise)
         x = pack(x)
-
-        
 
         # Now that we have 'packed' the latent tensors, verify that we calculated the image_seq_len, packed_h, and
         # packed_w correctly.
