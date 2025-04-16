@@ -729,6 +729,7 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
             # 转换为 RGB 模式
             raw_image = raw_image.convert("RGB")
             return raw_image
+
         # Load the conditioning image and resize it to the target image size.
         assert self.controlnet_vae is not None, 'Controlnet Vae must be set for UNO encoding'
         vae_info = context.models.load(self.controlnet_vae.vae)
@@ -740,16 +741,18 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         
         for img_name in ref_img_names:
             image_pil = context.images.get_pil(img_name)
+            image_pil = image_pil.convert("RGB")  # To correct resizing
             print(f'IMAGE ARRAY 1: {np.array(image_pil)}')
-            image_pil = preprocess_ref(image_pil.convert("RGB"))
+            image_pil = preprocess_ref(image_pil)
             print(f'IMAGE ARRAY 2: {np.array(image_pil)}')
             
             print(f'IMAGE TENSOR 0: {TVF.to_tensor(image_pil)}')
             
-            image_tensor = (TVF.to_tensor(image_pil) * 2.0 - 1.0).unsqueeze(0)
+            image_tensor = (TVF.to_tensor(image_pil) * 2.0 - 1.0).unsqueeze(0).float()
             print(f"IMAGE TENSOR {image_tensor.shape=} {image_tensor}")
             ref_latent = FluxVaeEncodeInvocation.vae_encode(vae_info=vae_info, image_tensor=image_tensor)
             print(f"REF LATENT {ref_latent.shape=}")
+            print(f"REF LATENT {ref_latent=}")
             # ref_latent = self._encode_image_vae(vae_info, image_pil)
             ref_latents.append(ref_latent)
         
