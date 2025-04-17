@@ -46,7 +46,7 @@ class FluxReduxInvocation(BaseInvocation):
         images: list[str] = []
         for image in [self.image, self.image2, self.image3, self.image4]:
             if image is not None:
-                image_pil = context.images.get_pil(self.image.image_name)
+                image_pil = context.images.get_pil(image.image_name)
                 images.append(context.images.save(image=image_pil).image_name)
         
         return FluxUnoOutput(
