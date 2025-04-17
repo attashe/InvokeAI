@@ -7,6 +7,7 @@ import numpy.typing as npt
 import torch
 import torchvision.transforms as tv_transforms
 from PIL import Image
+import torchvision.transforms.functional as TVF
 from torchvision.transforms.functional import resize as tv_resize
 from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
 
@@ -28,6 +29,7 @@ from invokeai.app.invocations.fields import (
 from invokeai.app.invocations.flux_controlnet import FluxControlNetField
 from invokeai.app.invocations.flux_vae_encode import FluxVaeEncodeInvocation
 from invokeai.app.invocations.ip_adapter import IPAdapterField
+from invokeai.app.invocations.flux_uno import preprocess_ref
 from invokeai.app.invocations.model import ControlLoRAField, LoRAField, TransformerField, VAEField
 from invokeai.app.invocations.primitives import LatentsOutput
 from invokeai.app.services.shared.invocation_context import InvocationContext
@@ -292,19 +294,10 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         img_ids = generate_img_ids(h=latent_h, w=latent_w, batch_size=b, device=x.device, dtype=x.dtype)
 
         is_flux_uno = self.uno_reference is not None
-        print(f"FLUX UNO STATE {is_flux_uno}")
         if is_flux_uno:
+            # Encode reference images and prepare position ids
             uno_ref_imgs = self._prep_uno_reference_imgs(context)
-            
-            print(f"X SHAPE {x.shape=}")
-            print(f"UNO REF SHAPE {uno_ref_imgs[0].shape=}")
-            
             uno_ref_imgs, uno_ref_ids = prepare_multi_ip(x, uno_ref_imgs)
-            
-            print(f"UNO REF SHAPE 2 {uno_ref_imgs[0].shape=}")
-            print(f"UNO REF IDS SHAPE 2 {uno_ref_ids[0].shape=}")
-            # for i in range(len(uno_ref_imgs)):
-            #     uno_ref_imgs[i] = pack(uno_ref_imgs[i])
         else:
             uno_ref_imgs = None
             uno_ref_ids = None
@@ -685,51 +678,7 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
 
         return controlnet_extensions
     
-    def _encode_image_vae(self, vae_info, image_pil: Image.Image):
-        image_pil = image_pil.convert("RGB")
-        image_pil = image_pil.resize((self.width, self.height), Image.Resampling.BICUBIC)
-        image_arr = np.array(image_pil)
-        
-        img_cond = torch.from_numpy(image_arr).float() / 127.5 - 1.0
-        img_cond = einops.rearrange(img_cond, "h w c -> 1 c h w")
-        
-        img_cond = FluxVaeEncodeInvocation.vae_encode(vae_info=vae_info, image_tensor=img_cond)
-
-        return img_cond
-    
     def _prep_uno_reference_imgs(self, context: InvocationContext) -> list[torch.Tensor]:
-        import torchvision.transforms.functional as TVF
-        
-        def preprocess_ref(raw_image: Image.Image, long_size: int = 512):
-            # 获取原始图像的宽度和高度
-            image_w, image_h = raw_image.size
-
-            # 计算长边和短边
-            if image_w >= image_h:
-                new_w = long_size
-                new_h = int((long_size / image_w) * image_h)
-            else:
-                new_h = long_size
-                new_w = int((long_size / image_h) * image_w)
-
-            # 按新的宽高进行等比例缩放
-            raw_image = raw_image.resize((new_w, new_h), resample=Image.LANCZOS)
-            target_w = new_w // 16 * 16
-            target_h = new_h // 16 * 16
-
-            # 计算裁剪的起始坐标以实现中心裁剪
-            left = (new_w - target_w) // 2
-            top = (new_h - target_h) // 2
-            right = left + target_w
-            bottom = top + target_h
-
-            # 进行中心裁剪
-            raw_image = raw_image.crop((left, top, right, bottom))
-
-            # 转换为 RGB 模式
-            raw_image = raw_image.convert("RGB")
-            return raw_image
-
         # Load the conditioning image and resize it to the target image size.
         assert self.controlnet_vae is not None, 'Controlnet Vae must be set for UNO encoding'
         vae_info = context.models.load(self.controlnet_vae.vae)
@@ -739,23 +688,16 @@ class FluxDenoiseInvocation(BaseInvocation, WithMetadata, WithBoard):
         ref_img_names: list[str] = self.uno_reference.image_names
         ref_latents: list[torch.Tensor] = []
         
+        # TODO: Maybe move reference side to UNO Node
         ref_long_side = 512 if len(ref_img_names) <= 1 else 320
         
         for img_name in ref_img_names:
             image_pil = context.images.get_pil(img_name)
             image_pil = image_pil.convert("RGB")  # To correct resizing
-            print(f'IMAGE ARRAY 1: {np.array(image_pil)}')
-            image_pil = preprocess_ref(image_pil, ref_long_side)
-            print(f'IMAGE ARRAY 2: {np.array(image_pil)}')
-            
-            print(f'IMAGE TENSOR 0: {TVF.to_tensor(image_pil)}')
+            image_pil = preprocess_ref(image_pil, ref_long_side)  # resize and crop
             
             image_tensor = (TVF.to_tensor(image_pil) * 2.0 - 1.0).unsqueeze(0).float()
-            print(f"IMAGE TENSOR {image_tensor.shape=} {image_tensor}")
             ref_latent = FluxVaeEncodeInvocation.vae_encode(vae_info=vae_info, image_tensor=image_tensor)
-            print(f"REF LATENT {ref_latent.shape=}")
-            print(f"REF LATENT {ref_latent=}")
-            # ref_latent = self._encode_image_vae(vae_info, image_pil)
             ref_latents.append(ref_latent)
         
         return ref_latents
