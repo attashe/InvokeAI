@@ -186,6 +186,15 @@ def generate_img_ids(h: int, w: int, batch_size: int, device: torch.device, dtyp
 
 def prepare_multi_ip(img: torch.Tensor, ref_imgs: list[torch.Tensor]
                      ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+    """Generate universal rotary position embedding(UnoPE) for reference images.
+
+    Args:
+        img (torch.Tensor): latent image representation for denoising
+        ref_imgs (list[torch.Tensor]): list of reference images
+
+    Returns:
+        tuple[list[torch.Tensor], list[torch.Tensor]]: packed reference images and position embeddings
+    """
     bs, c, h, w = img.shape
 
     ref_img_ids: list[torch.Tensor] = []

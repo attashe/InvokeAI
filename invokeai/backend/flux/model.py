@@ -119,20 +119,14 @@ class Flux(nn.Module):
         txt = self.txt_in(txt)
 
         ids = torch.cat((txt_ids, img_ids), dim=1)
-        # UNO Block
-        img_end = img.shape[1]
+        # Concatenate UNO reference images tokens and position ids
+        img_end = img.shape[1]  # length of original image vector
         if uno_ref_imgs is not None and uno_ref_ids is not None:
-            print(f'IMG SHAPES: {img.shape=}, {uno_ref_imgs[0].shape=}')
-            print(f'REF IMAGE: {uno_ref_imgs[0]=}')
-            print(f'IDS SHAPES: {ids.shape=}, {img_ids.shape=}, {uno_ref_ids[0].shape=}')
-            print(f'IDS SHAPES: {img_ids=}, {uno_ref_ids[0]=}')
             img_in = [img] + [self.img_in(ref) for ref in uno_ref_imgs]
             img_ids = [ids] + [ref_ids for ref_ids in uno_ref_ids]
             img = torch.cat(img_in, dim=1)  
             ids = torch.cat(img_ids, dim=1)
             
-            print(f'FINAL SHAPES: {img.shape=}, {ids.shape=}')
-        # UNO Block end
         pe = self.pe_embedder(ids)
 
         # Validate double_block_residuals shape.
